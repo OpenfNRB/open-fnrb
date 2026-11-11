@@ -1,0 +1,12 @@
+{
+  "schema_version": 2,
+  "assessment_id": "synthetic",
+  "tables": {
+    "Harvest": "harvest.csv",
+    "Parameters": "parameters.csv",
+    "Eligibility": "eligibility.csv"
+  },
+  "harvest_uncertainty": {
+    "kind": "fixed"
+  }
+}

@@ -1,0 +1,11 @@
+flowchart LR
+    Analyst["Assessment analyst"] --> Settings["Assessment configuration and assumptions"]
+    Evidence["Spatial data and household woody biomass use evidence"] --> Tool
+    Settings --> Tool
+    Runtime["QGIS Python environment"] -. supports .-> Tool
+    Tool["OpenfNRB 1.0.1<br/>Single-year biomass assessment"] --> Results["Nominal fNRB and biomass accounts"]
+    Tool --> Uncertainty["Optional Monte Carlo summaries and spatial uncertainty"]
+    Tool --> Records["Excel reports, GIS outputs and audit records"]
+    Results --> Review["Interpret and review assessment"]
+    Uncertainty --> Review
+    Records --> Review

@@ -1,0 +1,32 @@
+flowchart TD
+    Start["Agree purpose, reference year and intended use"] --> Scope["Define household biomass sourcing landscape<br/>and household-accessible harvesting area"]
+    Scope --> Collect["Collect household woody biomass use evidence<br/>stock, land cover and ecological parameters"]
+    Collect --> Sourcing["Justify household-use proxy for harvested biomass<br/>Document fuel origin, conversions and sourcing assumptions"]
+    Sourcing --> Ready{"Evidence and coverage adequate?"}
+    Ready -->|No| Gaps["Resolve gaps or narrow the assessment scope"]
+    Gaps --> Collect
+    Ready -->|Yes| Assumptions["Record eligibility, exclusions, growth assumptions<br/>and selected uncertainty components"]
+    Assumptions --> Prepare["Prepare and validate assessment inputs<br/>Confirm the operating environment"]
+    Prepare --> Nominal["Run nominal assessment in a new results folder"]
+    Nominal --> Complete{"Run completed successfully?"}
+    Complete -->|No| Diagnose["Inspect failure records and resolve the cause"]
+    Diagnose --> Prepare
+    Complete -->|Yes| Plausible{"Results and diagnostics adequately explained?"}
+    Plausible -->|No| Investigate["Investigate evidence and assumptions<br/>Preserve existing results"]
+    Investigate --> Collect
+    Plausible -->|Yes| MC{"Uncertainty assessment selected?"}
+    MC -->|No| Interpret["Interpret nominal findings<br/>Disclose unassessed uncertainty"]
+    MC -->|Yes| Configure["Confirm sampling assumptions and acknowledgements<br/>Set precision target and iteration limit"]
+    Configure --> RunMC["Run Monte Carlo and monitor saved status"]
+    RunMC --> State{"Assessment status?"}
+    State -->|Interrupted or failed| Recovery["Inspect records<br/>Resume only when inputs and execution remain compatible"]
+    Recovery --> RunMC
+    State -->|Export failed| Retry["Retry compatible export recovery<br/>Retain completed draws"]
+    Retry --> RunMC
+    State -->|Completed| Precision{"Numerical precision target met?"}
+    Precision -->|Yes| Uncertainty["Review conditional uncertainty summaries and maps"]
+    Precision -->|Iteration limit reached| Limit["Report remaining numerical precision limitation"]
+    Limit --> Uncertainty
+    Uncertainty --> Explain["Explain findings, scientific assumptions<br/>and uncertainty limitations"]
+    Interpret --> Explain
+    Explain --> Handover["Deliver results and assessment note<br/>Preserve inputs, decisions and audit evidence"]

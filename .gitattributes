@@ -1,0 +1,8 @@
+# Keep text files in LF format on every platform for exact source verification.
+* text=auto eol=lf
+
+# Binary assets are stored and compared as binary files.
+*.xlsx binary
+*.tif binary
+*.tiff binary
+*.gpkg binary

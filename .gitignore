@@ -1,0 +1,46 @@
+# Python caches and local environments
+__pycache__/
+*.py[cod]
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+.coverage
+htmlcov/
+.venv/
+venv/
+
+# Local credentials and environment settings
+.env
+.env.*
+!.env.example
+
+# Assessment inputs and outputs belong outside the source package
+/assessments/
+/assessment_data/
+/inputs/
+/results/
+/outputs/
+/output/
+/scratch/
+/tmp/
+/backups/
+
+# Locally generated examples
+/example_inputs/
+/example_results/
+/canopy_inputs/
+/canopy_results/
+/point_inputs/
+/point_results/
+
+# Local build products and temporary artifact files
+/build/
+/dist/
+/OpenfNRB-*.zip
+/OpenfNRB-*.zip.sha256
+*.inspect.ndjson
+~$*
+*.tmp
+.DS_Store
+Thumbs.db
+desktop.ini

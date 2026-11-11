@@ -1,0 +1,31 @@
+flowchart TD
+    Inputs["Workflow, tabular inputs and optional sampling configuration"] --> Validate["Validate package identity, schemas, units, evidence and coverage"]
+    Validate --> Boundary["Define sourcing landscape<br/>Polygon or household points with travel assumptions"]
+    Boundary --> Harvest["Resolve estimated annual harvest<br/>Annual total or household woody biomass use and household counts"]
+    Boundary --> Resources["Prepare accessible resource records<br/>Land cover, eligibility, exclusions and ecological zones"]
+    Harvest --> Prepare["Intersect native stock cells with resource area and zones<br/>Preserve source-cell identities"]
+    Resources --> Prepare
+    Stock["AGB or canopy cover<br/>Matching uncertainty and growth parameters"] --> Prepare
+    Prepare --> Classify{"Classification uncertainty configured?"}
+    Classify -->|Yes| Candidates["Prepare candidate resource support and matrix evidence"]
+    Classify -->|No| Nominal["Run nominal annual model<br/>Concurrent logistic growth and prescribed harvesting"]
+    Candidates --> Nominal
+    Candidates -. supports later sampling .-> Sample
+    Nominal --> Account["Account for regeneration, realised and unrealised harvest<br/>NRB = max of zero and H minus R<br/>fNRB = NRB divided by H when H is positive"]
+    Account --> NominalOut["Export nominal tables, Excel, GIS and provenance"]
+    NominalOut --> Mode{"Monte Carlo requested?"}
+    Mode -->|No| Review["Review results, flags and scientific limitations"]
+    Mode -->|Yes| Sample["Sample configured stock, parameters and annual harvest<br/>Optionally sample land-cover resource eligibility"]
+    Sample --> Draw["Run annual model for the draw<br/>Record metrics and sampled parameters"]
+    Draw --> Save["Save draws and periodic checkpoints"]
+    Save --> Check{"At a scheduled precision check<br/>Are stopping conditions met?"}
+    Check -->|Continue within iteration limit| Sample
+    Check -->|Precision met or iteration limit reached| Exports["Export Monte Carlo summaries and spatial statistics<br/>Optionally export GIS for every draw"]
+    Exports --> Review
+    Resume["Resume a saved assessment"] --> Compatible["Verify compatible files, code, runtime and checkpoint"]
+    Compatible --> Restored{"Simulation already complete?"}
+    Restored -->|No| Sample
+    Restored -->|Yes| Exports
+    Saved["Completed assessment records"] --> Replay["Verify and replay a selected iteration<br/>or regenerate spatial summaries"]
+    Exports --> Saved
+    Replay --> Review

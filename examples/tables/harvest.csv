@@ -1,0 +1,3 @@
+assessment_id,mode,estimated_annual_harvest_tonnes,households,woody_biomass_use_tonnes_per_household_year,source
+synthetic_total,annual_total,250,,,Invented example - not client data
+synthetic_households,household_count,,100,2.5,Invented example - not client data

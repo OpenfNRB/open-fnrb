@@ -1,0 +1,48 @@
+{
+  "schema_version": 1,
+  "tabular_config": "inputs.json",
+  "stock_mode": "agb",
+  "stock": {
+    "path": "stock.tif",
+    "units": "t_dry_matter/ha",
+    "source": "Invented installation example",
+    "version": "1",
+    "date": "2026-01-01"
+  },
+  "stock_uncertainty": {
+    "path": "uncertainty.tif",
+    "units": "t_dry_matter/ha",
+    "source": "Invented installation example",
+    "version": "1",
+    "date": "2026-01-01"
+  },
+  "uncertainty_interpretation": "standard_deviation",
+  "boundary": {
+    "path": "geometry.gpkg",
+    "layer": "area"
+  },
+  "zones": {
+    "vector": {
+      "path": "geometry.gpkg",
+      "layer": "area"
+    },
+    "zone_field": "zone_id"
+  },
+  "land_cover": {
+    "path": "classes.tif",
+    "units": "class_code",
+    "source": "Invented installation example",
+    "version": "1",
+    "date": "2026-01-01"
+  },
+  "exclusions": [],
+  "projection_suitability_acknowledged": true,
+  "classification_uncertainty": {
+    "matrix": "classification_matrix.csv",
+    "source_id": "Invented illustration; not validation data",
+    "orientation": "mapped_rows_reference_columns",
+    "dependence": "independent_native_cells",
+    "acknowledged": true,
+    "scope": "resource_eligibility_only"
+  }
+}

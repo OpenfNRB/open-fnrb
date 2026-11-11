@@ -1,0 +1,3 @@
+assessment_id,round_trip_hours,travelling_share,speed_kmh,edge_tolerance_metres,source
+synthetic_total,2,0.5,4,1,Invented example - not observed collection behaviour
+synthetic_households,2,0.5,4,1,Invented example - not observed collection behaviour

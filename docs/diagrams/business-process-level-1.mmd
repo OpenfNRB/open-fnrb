@@ -1,0 +1,9 @@
+flowchart LR
+    Scope["Define assessment purpose, year and sourcing landscape"] --> Evidence["Gather household-use, spatial and ecological evidence"]
+    Evidence --> Ready{"Evidence adequate?"}
+    Ready -->|No| Resolve["Resolve missing evidence or revise scope"]
+    Resolve --> Evidence
+    Ready -->|Yes| Prepare["Prepare inputs and document assumptions"]
+    Prepare --> Assess["Run nominal assessment<br/>Add Monte Carlo if selected"]
+    Assess --> Review["Review completion, results and limitations"]
+    Review --> Handover["Deliver assessment findings and traceable supporting records"]

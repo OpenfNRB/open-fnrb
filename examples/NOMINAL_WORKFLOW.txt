@@ -1,0 +1,286 @@
+Open fNRB nominal example
+
+Run these commands from the package folder in a QGIS Python environment:
+
+  python examples/create_nominal_example.py example_inputs
+  python run_open_fnrb.py nominal example_inputs/workflow.json --output example_results
+
+For the canopy route, generate a separate example folder:
+
+  python examples/create_nominal_example.py canopy_inputs --stock-mode canopy
+  python run_open_fnrb.py nominal canopy_inputs/workflow.json --output canopy_results
+
+For invented household/stove points and travel-based collection buffers:
+
+  python examples/create_nominal_example.py point_inputs --boundary-mode travel
+  python run_open_fnrb.py nominal point_inputs/workflow.json --output point_results
+
+The generator creates invented raster values, geometry and household woody biomass use.
+These are installation examples, not real assessments or scientific defaults.
+Input/output folders must be new. Existing evidence is never overwritten.
+
+workflow.json selects GIS sources, boundary, ecological mapping, exclusions and
+the tabular configuration. Relative paths are resolved against that JSON file.
+Its optional maximum_raster_block_cells setting is a positive integer (default
+65536). Stock, uncertainty, land-cover and built-up preparation read at most this
+many cells per raster read. Blocks retain row-major order and original source
+cell IDs; narrow limits can increase read overhead without changing results.
+The resolved block limit is retained in preparation audits. As part of the
+workflow configuration, changing it requires a new assessment rather than resume.
+This bounds input raster reads, not total process memory: polygon support,
+prepared simulation arrays and GIS export grids are still retained in memory.
+inputs.json selects the assessment, tabular files and harvest uncertainty model.
+Each raster declares its units, source, version and date. No missing uncertainty
+is replaced with zero. Explicit empty exclusions means no supplementary layers.
+
+Land cover and built-up rasters may use a different CRS from the biomass grid.
+Supply land_cover_transform at workflow level, or built_up_transform inside
+household_allocation, when the corresponding categorical raster differs.
+Each transformation object contains domain_to_source and cells_to_stock. Both
+require max_source_segment, target_tolerance and maximum_accuracy_metres, and
+optionally maximum_refinements (default 8). Source segment lengths use that
+operation's source coordinate units; target tolerances use its target units.
+Thus domain_to_source starts in biomass coordinates and ends in categorical
+coordinates; cells_to_stock goes in the reverse direction. Specify tolerances
+for the actual CRS units rather than copying metre values into degree settings.
+
+Cells retain their original class codes and source IDs. Their densified polygon
+boundaries are transformed for intersection and area measurement in biomass
+coordinates. The read window alone is expanded by the inverse target tolerance;
+the final support is clipped to the original assessment domain. Missing coverage,
+unmapped classes, insufficient refinement and unsuitable datum operations fail.
+Transformed areas must reconcile with the complete domain, including the full
+administrative units used for household-allocation denominators. Operations and
+per-cell refinement diagnostics are recorded in the audit. For curved projections,
+coverage failures may require tighter transformation tolerances.
+
+Categorical audit TIFFs retain their original CRS and grid. Their support
+shapefiles use the biomass CRS. Read each layer's CRS instead of assuming every
+file in the audit folder has the same coordinate system. Stock/uncertainty
+rasters still require matching native grids; they are not implicitly resampled.
+
+The current command supports polygon or travel-point boundaries, both stock routes,
+direct harvest and household-derived harvest. Built-up allocation additionally
+requires administrative_vector, id_field, built_up and rules_table under the
+household_allocation configuration key. Administrative identifiers must match
+the AdminHouseholds table exactly. Built-up rules are supplied separately from
+resource eligibility, using the same class-code/boolean table format.
+
+For travel boundaries, set boundary to an object with kind="travel" and points
+containing path, id_field and, for a multi-layer file, layer. The tabular intake
+must select a Travel sheet/CSV row for the assessment. Point IDs must be unique
+text, preserving leading zeros. No IDs are generated from record positions.
+If point coordinates use another CRS, explicitly supply maximum_accuracy_metres
+in the points object. Unknown-accuracy and ballpark operations are rejected.
+Original coordinates and the operation used remain in the run record.
+
+Travel runs export collection_points, individual travel_buffers and the dissolved
+assessment shapefiles. collection_point_ids.json maps numeric export record IDs
+back to the supplied IDs. Overlaps do not duplicate harvesting area or harvest.
+
+Vector transformation is optional and explicit. Add a transform object with
+max_source_segment (source CRS units), target_tolerance (target CRS units) and
+maximum_accuracy_metres. No ballpark coordinate operation is accepted.
+Categorical rasters in another CRS require the explicit transformation settings
+described above.
+
+Outputs currently include nominal.json, nominal_cells.csv,
+classification_cells.csv, prepared_nominal.npz, run_record.json, events.jsonl,
+status.json and manifest.json. CSV geometry uses WKT in the recorded CRS.
+Failures retain events, status and failure.json. Source file dependencies and
+software files are fingerprinted in the run record.
+
+The gis folder contains native-grid GeoTIFFs and polygon shapefiles, including
+all shapefile sidecars and field-name dictionaries. layers.json records units,
+spatial support and nodata meaning. Density rasters are eligible-area-weighted
+means; total rasters sum the fragment contributions in each source stock cell.
+Use eligible_area to reconcile means to totals. There is no pixel-level fNRB map.
+Shapefiles retain the exact polygon fragments; NPZ/CSV retain full numeric
+precision where shapefile decimal fields round values.
+
+Excel summaries and spatial Monte Carlo outputs are integrated as described
+below. status.json identifies completion and any export failures. Interpret results using docs/METHODOLOGY.md and docs/SCIENTIFIC_LIMITATIONS.md.
+
+Monte Carlo and restart
+
+The synthetic generator also writes sampling.json for its chosen stock route.
+Its assumptions are demonstration choices, not provider-endorsed error models.
+For user data, select and acknowledge the uncertainty assumptions explicitly.
+Precision settings are configurable engineering settings, not ecological checks.
+
+  python run_open_fnrb.py monte-carlo example_inputs/workflow.json --sampling example_inputs/sampling.json --output mc_results
+
+This runs nominal preparation into mc_results/nominal and Monte Carlo into
+mc_results/monte_carlo. Results include parameter draws, all iteration metrics,
+mean/median/SD/P10/P90 summaries, precision checks and a restart checkpoint.
+The zero-prescribed-harvest flag is retained per iteration. No additional percentiles
+are reported. Stock spatial-dependence scenarios use separate configurations.
+
+Use --stop-after N for a graceful stop after N completed iterations. To continue:
+
+  python run_open_fnrb.py resume example_inputs/workflow.json --sampling example_inputs/sampling.json --output mc_results
+
+Resume checks source files, prepared evidence, code, configuration and runtime.
+Changed inputs require a new output directory. Rejected attempts are logged
+without replacing the scientific checkpoint. Original source paths must remain
+available for these checks; relocating an archived assessment is not supported.
+After an ungraceful process termination, retained lock files require investigation
+before recovery. The tool does not automatically discard another process's lock.
+
+Selected-iteration replay
+
+  python run_open_fnrb.py replay mc_results --iteration 0 --output replay_0000 --gis
+
+Iteration indices start at zero and must refer to completed draws. Replay verifies
+the checkpoint, original inputs, prepared evidence, software and numerical runtime,
+then checks exact agreement with the saved parameter record and aggregate metrics.
+It writes full-precision per-record arrays, CSV and a verification record. --gis
+also exports sampled stock/flux rasters and calculation-fragment shapefiles.
+The replay directory must be outside the original assessment; replay does not
+alter the original checkpoint or manifest. Active assessment locks prevent replay.
+Each exported spatial quantity refers to the selected iteration. Area-weighted
+means and cell totals retain the same interpretation as the nominal GIS outputs.
+
+Excel summaries
+
+Every nominal run produces summary.xlsx. Monte Carlo assessments also produce
+a summary.xlsx at the assessment root, refreshed on compatible resume. The four
+sheets contain nominal results, available uncertainty statistics, input sources
+and diagnostic flags. Interrupted results and precision limits are identified.
+Nominal-only runs explicitly state that uncertainty was not assessed. Workbook
+cells contain computed values, not formulas; CSV/JSON retain the detailed audit.
+Excel is not required to create the report. P10 and P90 are conditional simulation
+percentiles, not a guarantee of total uncertainty coverage.
+
+Optional land-cover classification uncertainty
+
+  python examples/create_nominal_example.py class_inputs --classification-uncertainty
+  python run_open_fnrb.py monte-carlo class_inputs/workflow.json --sampling class_inputs/sampling.json --output class_results
+
+This generated example uses invented data. For an assessment, supply suitable
+validation evidence and add classification_uncertainty to workflow.json:
+
+  "classification_uncertainty": {
+    "matrix": "classification_matrix.csv",
+    "source_id": "Your validation dataset and version",
+    "orientation": "mapped_rows_reference_columns",
+    "dependence": "independent_native_cells",
+    "acknowledged": true,
+    "scope": "resource_eligibility_only"
+  }
+
+The matrix may be a CSV file or an XLSX workbook with a ClassificationMatrix
+worksheet. The supplied Excel input template includes that sheet, and
+examples/tables/classification_matrix.xlsx provides an invented worked example.
+Formulas are rejected; supply values. The matrix has exactly these columns:
+
+  mapped_class,reference_class,count
+
+Supply every pair of nonnegative integer mapped/reference class codes, including explicit zero
+counts. Both axes use the same class-code list, all mapped classes must be
+covered, and every row must have positive total count. Eligibility rules must
+cover every possible reference class. Counts are normalized within mapped rows
+to represent P(reference class | mapped class). A matrix with reference rows
+must be prepared in the required orientation before use. Do not use raw counts
+from a validation design that requires weighting or bias correction without
+first applying the appropriate correction and documenting it in the source.
+
+Enabling this option explicitly acknowledges independent draws between native
+classification cells. All fragments of the same class cell share one draw,
+including fragments spanning biomass cells or ecological zones. Classification
+draws use a separate stream from stock, growth, capacity and harvest uncertainty.
+Matrix-estimation uncertainty and spatial classification-error correlation are
+not represented by this option.
+
+Sampling changes resource eligibility only. Ecological-zone assignments, growth
+parameter sources, explicit exclusions, household allocation and administrative
+household counts remain fixed. Harvest uncertainty still follows its configured
+model. Uniform harvesting requests are recalculated over each draw's eligible
+hectares; unrealised harvest is retained. A draw with no eligible resource retains full
+harvest and reports fNRB=1 for positive harvest (zero with the zero-prescribed-harvest flag
+when harvest is zero).
+
+The nominal estimate continues to use mapped classes. Candidate preparation also
+retains nonexcluded land that could become eligible, requiring valid stock,
+uncertainty and ecological coverage across that support. Candidate NPZ/CSV files,
+a shapefile and candidate-area TIFF are exported separately from nominal data.
+Nominal-only runs prepare this audit support but do not sample classification.
+
+Every Monte Carlo draw records sampled classes, class-cell IDs and eligible area.
+Replay and optional full-iteration GIS include the sampled classification TIFF
+on its original grid, plus candidate/eligible area maps and attributed resource
+stocks and fluxes. The classification TIFF may use a different CRS from stock
+outputs; each file retains its own CRS.
+
+Spatial summaries use FIXED CANDIDATE AREA as their density denominator when
+classification is sampled. Ineligible records contribute zero resource stock
+and flux; that zero does not imply zero physical biomass on the landscape.
+This includes every draw, rather than dropping zero-resource draws. Exported
+eligible_fraction statistics show the sampled eligible share of each stock cell's
+candidate area, and eligible_area_ha statistics show sampled hectares. Percentile
+maps of these quantities are conditional simulation summaries, not confidence
+in the land-cover map or independent precision guarantees.
+
+Omit classification_uncertainty to keep land cover fixed. Matrix or configuration
+changes prevent resume; use a new assessment. Checkpoint recovery, replay and
+automatic/full-iteration exports use the same verified classification records.
+
+Spatial uncertainty summaries
+
+Completed monte-carlo and resume commands automatically export spatial summaries
+under spatial_exports/attempt_0001. summary.json and spatial_export.json identify
+the successful export. Runs stopped before completion do not produce these maps.
+Both precision_met and precision_limit_reached runs export maps; reaching the
+limit remains an explicit limitation, not a claim that precision was achieved.
+
+The assessment remains locked throughout export. If export fails, the top-level
+status is export_failed and the completed simulation checkpoint is preserved.
+Use the same resume command to retry; completed draws are not resampled. A new
+numbered export attempt preserves the failed attempt and its logs. Resource-only
+options --maximum-scratch-bytes and --cell-block-size may change on resume without
+changing the sampling configuration. Successfully completed exports are checked
+against their file fingerprints and reused; altered files cause an error.
+
+Optional GIS for every iteration
+
+  python run_open_fnrb.py monte-carlo example_inputs/workflow.json --sampling example_inputs/sampling.json --output mc_full --full-iteration-gis
+
+This additionally exports every completed draw's native-grid GeoTIFFs, calculation
+record shapefile and sidecars, CSV/NPZ cell data, parameter record and file manifest.
+Each draw is checked against its recorded metrics and parameters before export.
+iteration_exports/index.json lists the successful output directory for every
+zero-based iteration. These are stock and flux layers, not pixel-level fNRB.
+
+Full iteration GIS is off by default and can use substantial storage and time.
+Once requested, the choice persists for that assessment: a resume command does
+not need the flag again. It can also be enabled when resuming a completed run.
+Exports begin only after simulation completion and spatial summary export.
+Completed iteration exports are fingerprint-checked and reused on resume;
+failed or incomplete attempts remain alongside a new retry attempt. Altered
+completed files cause an error. No draws are silently skipped or resampled.
+
+Additional spatial summaries
+
+For an additional independently located export, use:
+
+  python run_open_fnrb.py spatial-summary mc_results --output mc_maps
+
+This verifies and reconstructs every completed draw, then exports mean, median,
+standard deviation, P10 and P90 of stock and annual flux quantities. Each draw's
+fragments are aggregated to native stock cells before summary statistics are
+calculated. Maps retain the native grid and eligible-area support. CSV, NPZ and
+shapefile outputs contain native-cell density statistics; GeoTIFFs additionally
+contain corresponding cell-total statistics. No pixel-level fNRB is calculated.
+
+Only finished runs are accepted. A run that reaches its iteration limit retains
+the precision_limit_reached status in the spatial summary. These maps do not
+demonstrate that spatial percentiles themselves have met a precision target.
+Cell percentiles and standard deviations are not additive: use the original
+assessment Monte Carlo results for overall uncertainty.
+
+Exact percentiles use temporary disk-backed samples, removed after export or a
+handled failure. The default scratch budget is 20 GB; change it explicitly with
+--maximum-scratch-bytes. --cell-block-size controls the number of native cells
+processed together for statistics. Large runs may require substantial disk space
+and replay time. All resulting summaries and their source checkpoint fingerprints
+are retained, while the temporary draws can be reproduced from the original run.

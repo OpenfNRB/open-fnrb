@@ -1,0 +1,17 @@
+{
+  "schema_version": 2,
+  "assessment_id": "synthetic_households",
+  "tables": {
+    "Harvest": "harvest.csv",
+    "Parameters": "parameters.csv",
+    "Eligibility": "eligibility.csv",
+    "Travel": "travel.csv",
+    "Observations": "observations.csv"
+  },
+  "harvest_uncertainty": {
+    "kind": "household_bootstrap",
+    "source_id": "synthetic_observations",
+    "acknowledged": true,
+    "design": "assumed_iid"
+  }
+}
